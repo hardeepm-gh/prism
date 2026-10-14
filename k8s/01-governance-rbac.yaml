@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: correlator-sa
+  namespace: aiops-m5
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: correlator-role
+  namespace: aiops-m5
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: correlator-rb
+  namespace: aiops-m5
+subjects:
+- kind: ServiceAccount
+  name: correlator-sa
+  namespace: aiops-m5
+roleRef:
+  kind: Role
+  name: correlator-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: remediator-sa
+  namespace: aiops-m5
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: remediator-role
+  namespace: aiops-m5
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: remediator-rb
+  namespace: aiops-m5
+subjects:
+- kind: ServiceAccount
+  name: remediator-sa
+  namespace: aiops-m5
+roleRef:
+  kind: Role
+  name: remediator-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: approval-gateway-sa
+  namespace: aiops-m5
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: approval-gateway-role
+  namespace: aiops-m5
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: approval-gateway-rb
+  namespace: aiops-m5
+subjects:
+- kind: ServiceAccount
+  name: approval-gateway-sa
+  namespace: aiops-m5
+roleRef:
+  kind: Role
+  name: approval-gateway-role
+  apiGroup: rbac.authorization.k8s.io

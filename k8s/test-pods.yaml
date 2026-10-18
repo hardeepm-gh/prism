@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cockpit
+  namespace: aiops-m5
+  labels:
+    app: cockpit
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.25
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: correlator-test
+  namespace: aiops-m5
+  labels:
+    app: correlator
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.25

@@ -16,6 +16,7 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["get"]
+  resourceNames: ["correlator-db-creds"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -46,6 +47,7 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["get"]
+  resourceNames: ["remediator-token"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -74,8 +76,12 @@ metadata:
   namespace: aiops-m5
 rules:
 - apiGroups: [""]
-  resources: ["configmaps", "secrets"]
+  resources: ["configmaps"]
   verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+  resourceNames: ["cockpit-aws-creds"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

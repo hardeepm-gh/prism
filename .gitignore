@@ -1,2 +1,5 @@
 .DS_Store
 backups/
+03-secrets-template.yaml
+03-secrets-template.yaml
+/tmp/secret.yaml

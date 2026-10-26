@@ -1,0 +1,42 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-non-root
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+  - name: require-run-as-non-root
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    validate:
+      message: "Pods must run as non-root"
+      pattern:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: block-privileged
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+  - name: block-privileged-containers
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    validate:
+      message: "Privileged containers are blocked"
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              privileged: false

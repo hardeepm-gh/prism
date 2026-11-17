@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: approval-gateway
+  namespace: aiops-m5
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: approval-gateway
+  template:
+    metadata:
+      labels:
+        app: approval-gateway
+    spec:
+      serviceAccountName: approval-gateway-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: approval-gateway
+        image: prism-approval-gateway:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8087
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]

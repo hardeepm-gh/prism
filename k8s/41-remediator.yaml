@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: remediator
+  namespace: aiops-m5
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: remediator
+  template:
+    metadata:
+      labels:
+        app: remediator
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: remediator
+        image: prism-remediator:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8090
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop: ["ALL"]

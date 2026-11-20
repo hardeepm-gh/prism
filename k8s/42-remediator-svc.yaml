@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: remediator
+  namespace: aiops-m5
+spec:
+  type: NodePort
+  selector:
+    app: remediator
+  ports:
+  - port: 8090
+    targetPort: 8090
+    nodePort: 30086

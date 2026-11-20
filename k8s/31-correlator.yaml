@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: correlator
+  namespace: aiops-m5
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: correlator
+  template:
+    metadata:
+      labels:
+        app: correlator
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: correlator
+        image: prism-correlator:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8089
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop: ["ALL"]

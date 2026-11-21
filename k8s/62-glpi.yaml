@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: glpi
+  namespace: aiops-m5
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: glpi
+  template:
+    metadata:
+      labels:
+        app: glpi
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: glpi
+        image: glpi/glpi:11
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        env:
+        - name: MARIADB_HOST
+          value: glpi-mariadb
+        - name: MARIADB_PORT
+          value: "3306"
+        - name: MARIADB_DATABASE
+          value: glpi
+        - name: MARIADB_USER
+          value: glpi
+        - name: MARIADB_PASSWORD
+          value: glpi123
+        volumeMounts:
+        - name: data
+          mountPath: /var/www/html/files
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop: ["ALL"]
+      volumes:
+      - name: data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: glpi
+  namespace: aiops-m5
+spec:
+  type: NodePort
+  selector:
+    app: glpi
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30089

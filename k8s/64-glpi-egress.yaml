@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-glpi-egress-to-mariadb
+  namespace: aiops-m5
+spec:
+  podSelector:
+    matchLabels:
+      app: glpi
+  policyTypes: ["Egress"]
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: glpi-mariadb
+    ports:
+    - port: 3306
+      protocol: TCP

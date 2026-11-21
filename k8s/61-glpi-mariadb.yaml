@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: glpi-mariadb
+  namespace: aiops-m5
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: glpi-mariadb
+  template:
+    metadata:
+      labels:
+        app: glpi-mariadb
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+      containers:
+      - name: mariadb
+        image: mariadb:11
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3306
+        envFrom:
+        - secretRef:
+            name: glpi-db
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 999
+          capabilities:
+            drop: ["ALL"]
+      volumes:
+      - name: data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: glpi-mariadb
+  namespace: aiops-m5
+spec:
+  selector:
+    app: glpi-mariadb
+  ports:
+  - port: 3306
+    targetPort: 3306

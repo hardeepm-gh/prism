@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 import os, requests
 app = FastAPI(title="PRISM Remediator")
 
@@ -49,6 +51,10 @@ class ExecuteReq(BaseModel):
     glpi_ticket_id: Optional[int] = None
 
 actions_log = []
+
+@app.get("/metrics", response_class=PlainTextResponse)
+def metrics():
+    return PlainTextResponse(generate_latest().decode(), media_type=CONTENT_TYPE_LATEST)
 
 @app.post("/execute")
 def execute(req: ExecuteReq):

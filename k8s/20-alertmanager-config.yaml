@@ -8,8 +8,8 @@ data:
     global:
       resolve_timeout: 5m
     route:
-      group_by: ["root_correlation_key"]
-      group_wait: 30s
+      group_by: ["alertname", "root_correlation_key"]
+      group_wait: 10s
       group_interval: 5m
       repeat_interval: 12h
       receiver: "prism-correlator"
@@ -17,3 +17,4 @@ data:
     - name: "prism-correlator"
       webhook_configs:
       - url: "http://correlator:8089/webhook"
+        send_resolved: true

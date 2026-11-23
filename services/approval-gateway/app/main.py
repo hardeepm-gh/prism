@@ -1,7 +1,13 @@
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 app = FastAPI(title="PRISM Approval Gateway")
 
 approvals = {}
+
+@app.get("/metrics", response_class=PlainTextResponse)
+def metrics():
+    return PlainTextResponse(generate_latest().decode(), media_type=CONTENT_TYPE_LATEST)
 
 @app.get("/healthz")
 def health():

@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter
 import os, requests
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -9,6 +11,13 @@ GLPI_URL = os.getenv("GLPI_URL", "http://glpi:80/apirest.php")
 GLPI_USER = os.getenv("GLPI_USER", "glpi")
 GLPI_PASS = os.getenv("GLPI_PASS", "glpi")
 GLPI_APP_TOKEN = os.getenv("GLPI_APP_TOKEN", "")
+
+WEBHOOK_COUNT = Counter("prism_webhook_total", "Total webhooks received")
+TICKETS_CREATED = Counter("prism_glpi_tickets_total", "GLPI tickets auto-created")
+
+@app.get("/metrics", response_class=PlainTextResponse)
+def metrics():
+    return PlainTextResponse(generate_latest().decode(), media_type=CONTENT_TYPE_LATEST)
 
 store = {"parent": None, "children": [], "glpi_ticket_id": None}
 

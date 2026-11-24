@@ -2,7 +2,21 @@ from fastapi import FastAPI, Header, HTTPException, Depends
 import os
 from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter
-import os, requests, json, time
+import os, requests
+import time as _time
+
+def _with_retry(fn, attempts=3, backoff=1.0):
+    last = None
+    for i in range(attempts):
+        try:
+            return fn()
+        except Exception as e:
+            last = e
+            print(f'GLPI attempt {i+1}/{attempts} failed: {e}')
+            if i < attempts - 1:
+                _time.sleep(backoff * (2 ** i))
+    raise last if last else RuntimeError('GLPI retry exhausted')
+import json, time
 from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -61,7 +75,7 @@ def create_glpi_ticket(parent, children):
         headers = {}
         if GLPI_APP_TOKEN:
             headers["App-Token"] = GLPI_APP_TOKEN
-        r = requests.get(f"{GLPI_URL}/initSession", auth=(GLPI_USER, GLPI_PASS), headers=headers, timeout=5)
+        r = _with_retry(lambda: requests.get(f"{GLPI_URL}/initSession", auth=(GLPI_USER, GLPI_PASS), headers=headers, timeout=5))
         print(f"GLPI initSession status {r.status_code} body {r.text[:300]}")
         j = r.json()
         if isinstance(j, list):
@@ -75,9 +89,9 @@ def create_glpi_ticket(parent, children):
         h2 = {"Session-Token": sess, "Content-Type": "application/json"}
         if GLPI_APP_TOKEN:
             h2["App-Token"] = GLPI_APP_TOKEN
-        r2 = requests.post(f"{GLPI_URL}/Ticket", headers=h2, json={"input": {"name": name, "content": content, "status": 2, "priority": 5, "type": 1}}, timeout=5)
+        r2 = _with_retry(lambda: requests.post(f"{GLPI_URL}/Ticket", headers=h2, json={"input": {"name": name, "content": content, "status": 2, "priority": 5, "type": 1}}, timeout=5))
         j = r2.json()
-        requests.get(f"{GLPI_URL}/killSession", headers={"Session-Token": sess}, timeout=5)
+        _with_retry(lambda: requests.get(f"{GLPI_URL}/killSession", headers={"Session-Token": sess}, timeout=5))
         return j.get("id")
     except Exception as e:
         print(f"GLPI ticket failed: {e}")

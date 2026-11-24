@@ -1,7 +1,21 @@
 from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-import os, requests, json, time
+import os, requests
+import time as _time
+
+def _with_retry(fn, attempts=3, backoff=1.0):
+    last = None
+    for i in range(attempts):
+        try:
+            return fn()
+        except Exception as e:
+            last = e
+            print(f'GLPI attempt {i+1}/{attempts} failed: {e}')
+            if i < attempts - 1:
+                _time.sleep(backoff * (2 ** i))
+    raise last if last else RuntimeError('GLPI retry exhausted')
+import json, time
 from pydantic import BaseModel
 from typing import Optional
 
@@ -48,7 +62,7 @@ def update_glpi_ticket(ticket_id, approval_id, action):
         h = {}
         if GLPI_APP_TOKEN:
             h["App-Token"] = GLPI_APP_TOKEN
-        r = requests.get(f"{GLPI_URL}/initSession", auth=(GLPI_USER, GLPI_PASS), headers=h, timeout=5)
+        r = _with_retry(lambda: requests.get(f"{GLPI_URL}/initSession", auth=(GLPI_USER, GLPI_PASS), headers=h, timeout=5))
         j = r.json()
         if isinstance(j, list):
             print(f"GLPI initSession error: {j}")
@@ -59,7 +73,7 @@ def update_glpi_ticket(ticket_id, approval_id, action):
         h2 = {"Session-Token": sess, "Content-Type": "application/json"}
         if GLPI_APP_TOKEN:
             h2["App-Token"] = GLPI_APP_TOKEN
-        r2 = requests.put(f"{GLPI_URL}/Ticket/{ticket_id}", headers=h2, json={"input": {"status": 5, "content": f"Executed {action} via approval {approval_id}"}}, timeout=5)
+        r2 = _with_retry(lambda: requests.put(f"{GLPI_URL}/Ticket/{ticket_id}", headers=h2, json={"input": {"status": 5, "content": f"Executed {action} via approval {approval_id}"}}, timeout=5))
         print(f"GLPI Ticket {ticket_id} update status {r2.status_code} body {r2.text[:200]}")
         return r2.status_code in (200, 201)
     except Exception as e:

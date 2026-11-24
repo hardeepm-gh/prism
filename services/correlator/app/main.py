@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException, Depends
+import os
 from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter
 import os, requests, json, time
@@ -6,10 +7,17 @@ from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Dict, Any
 
+PRISM_API_KEY = os.environ.get("PRISM_API_KEY", "")
+
+def require_key(x_prism_api_key: str = Header(default=""), authorization: str = Header(default="")):
+    if PRISM_API_KEY and (x_prism_api_key == PRISM_API_KEY or authorization == f"Bearer {PRISM_API_KEY}"):
+        return
+    raise HTTPException(status_code=401, detail="invalid API key")
+
 app = FastAPI(title="PRISM Correlator")
 GLPI_URL = os.getenv("GLPI_URL", "http://glpi:80/apirest.php")
-GLPI_USER = os.getenv("GLPI_USER", "glpi")
-GLPI_PASS = os.getenv("GLPI_PASS", "glpi")
+GLPI_USER = os.environ["GLPI_USER"]
+GLPI_PASS = os.environ["GLPI_PASS"]
 GLPI_APP_TOKEN = os.getenv("GLPI_APP_TOKEN", "")
 AUDIT_FILE = Path(os.getenv("AUDIT_FILE", "/data/correlator-audit.jsonl"))
 WEBHOOK_COUNT = Counter("prism_webhook_total", "Total webhooks received")
@@ -95,7 +103,7 @@ class Webhook(BaseModel):
     alerts: List[Alert]
 
 @app.post("/webhook")
-def webhook(payload: Webhook):
+def webhook(payload: Webhook, _auth=Depends(require_key)):
     WEBHOOK_COUNT.inc()
     alerts = payload.alerts
     audit("webhook_received", {"alerts": [a.labels for a in alerts]})

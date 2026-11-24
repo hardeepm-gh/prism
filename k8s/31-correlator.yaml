@@ -22,6 +22,9 @@ spec:
       - name: correlator
         image: prism-correlator:latest
         imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: prism-secrets
         ports:
         - containerPort: 8089
         volumeMounts:

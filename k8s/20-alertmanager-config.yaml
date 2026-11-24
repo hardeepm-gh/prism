@@ -18,3 +18,5 @@ data:
       webhook_configs:
       - url: "http://correlator:8089/webhook"
         send_resolved: true
+        http_config:
+          bearer_token_file: /etc/prism-key/api-key

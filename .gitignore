@@ -3,3 +3,4 @@ backups/
 03-secrets-template.yaml
 03-secrets-template.yaml
 /tmp/secret.yaml
+k8s/80-prism-secrets.yaml

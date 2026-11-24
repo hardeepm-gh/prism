@@ -1,9 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 import os, requests, json, time
 from pydantic import BaseModel
 from typing import Optional
+
+PRISM_API_KEY = os.environ.get("PRISM_API_KEY", "")
+
+def require_key(x_prism_api_key: str = Header(default="")):
+    if not PRISM_API_KEY or x_prism_api_key != PRISM_API_KEY:
+        raise HTTPException(status_code=401, detail="invalid API key")
 
 app = FastAPI(title="PRISM Remediator")
 
@@ -33,8 +39,8 @@ for _e in load_audit():
         actions_log.append(_e["data"])
 
 GLPI_URL = os.getenv("GLPI_URL", "http://glpi:80/apirest.php")
-GLPI_USER = os.getenv("GLPI_USER", "glpi")
-GLPI_PASS = os.getenv("GLPI_PASS", "glpi")
+GLPI_USER = os.environ["GLPI_USER"]
+GLPI_PASS = os.environ["GLPI_PASS"]
 GLPI_APP_TOKEN = os.getenv("GLPI_APP_TOKEN", "")
 
 def update_glpi_ticket(ticket_id, approval_id, action):
@@ -83,7 +89,7 @@ def metrics():
     return PlainTextResponse(generate_latest().decode(), media_type=CONTENT_TYPE_LATEST)
 
 @app.post("/execute")
-def execute(req: ExecuteReq):
+def execute(req: ExecuteReq, _auth=Depends(require_key)):
     if not req.approval_id:
         return {"error": "approval required", "status": "forbidden"}
     glpi_updated = False

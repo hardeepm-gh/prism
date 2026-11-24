@@ -22,6 +22,9 @@ spec:
       - name: remediator
         image: prism-remediator:latest
         imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: prism-secrets
         ports:
         - containerPort: 8090
         volumeMounts:

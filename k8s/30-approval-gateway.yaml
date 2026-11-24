@@ -25,6 +25,9 @@ spec:
       - name: approval-gateway
         image: prism-approval-gateway:latest
         imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: prism-secrets
         ports:
         - containerPort: 8087
         resources:

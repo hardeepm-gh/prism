@@ -1,10 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from pydantic import BaseModel
 from uuid import uuid4
 import os, json, time
 from pathlib import Path
+
+PRISM_API_KEY = os.environ.get("PRISM_API_KEY", "")
+
+def require_key(x_prism_api_key: str = Header(default="")):
+    if not PRISM_API_KEY or x_prism_api_key != PRISM_API_KEY:
+        raise HTTPException(status_code=401, detail="invalid API key")
 
 app = FastAPI(title="PRISM Approval Gateway")
 AUDIT_FILE = Path(os.getenv("AUDIT_FILE", "/data/approval-audit.jsonl"))
@@ -59,14 +65,14 @@ class ApprovalRequest(BaseModel):
     risk: str = "L4"
 
 @app.post("/approvals")
-def create_approval(req: ApprovalRequest):
+def create_approval(req: ApprovalRequest, _auth=Depends(require_key)):
     aid = str(uuid4())[:8]
     approvals[aid] = {"id": aid, "incident_id": req.incident_id, "action": req.action, "risk": req.risk, "status": "pending", "created_at": int(time.time())}
     audit("approval_created", approvals[aid])
     return approvals[aid]
 
 @app.post("/approvals/{aid}/approve")
-def approve(aid: str, approver: str = "human"):
+def approve(aid: str, approver: str = "human", _auth=Depends(require_key)):
     if aid not in approvals:
         return {"error": "not found"}
     approvals[aid]["status"] = "approved"

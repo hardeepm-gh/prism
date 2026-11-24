@@ -1,20 +1,36 @@
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-import os, requests
-app = FastAPI(title="PRISM Remediator")
-
-@app.get("/healthz")
-def health():
-    return {"status": "ok", "service": "remediator"}
-
-@app.get("/actions")
-def actions():
-    return {"actions": actions_log}
-
-
+import os, requests, json, time
 from pydantic import BaseModel
 from typing import Optional
+
+app = FastAPI(title="PRISM Remediator")
+
+AUDIT_FILE = "/data/remediator-audit.jsonl"
+
+def load_audit():
+    try:
+        with open(AUDIT_FILE) as f:
+            return [json.loads(line) for line in f if line.strip()]
+    except FileNotFoundError:
+        return []
+
+def audit(event, data):
+    entry = {"ts": int(time.time()), "event": event, "data": data}
+    try:
+        os.makedirs(os.path.dirname(AUDIT_FILE), exist_ok=True)
+        with open(AUDIT_FILE, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception as e:
+        print(f"audit write failed: {e}")
+    return entry
+
+# Restore actions_log from audit on startup
+actions_log = []
+for _e in load_audit():
+    if _e.get("event") == "action_executed" and isinstance(_e.get("data"), dict):
+        actions_log.append(_e["data"])
 
 GLPI_URL = os.getenv("GLPI_URL", "http://glpi:80/apirest.php")
 GLPI_USER = os.getenv("GLPI_USER", "glpi")
@@ -50,7 +66,17 @@ class ExecuteReq(BaseModel):
     approval_id: Optional[str] = None
     glpi_ticket_id: Optional[int] = None
 
-actions_log = []
+@app.get("/healthz")
+def health():
+    return {"status": "ok", "service": "remediator"}
+
+@app.get("/actions")
+def actions():
+    return {"actions": actions_log}
+
+@app.get("/audit")
+def get_audit():
+    return {"entries": load_audit()}
 
 @app.get("/metrics", response_class=PlainTextResponse)
 def metrics():
@@ -65,4 +91,5 @@ def execute(req: ExecuteReq):
         glpi_updated = update_glpi_ticket(req.glpi_ticket_id, req.approval_id, req.action)
     entry = {"incident_id": req.incident_id, "action": req.action, "approval_id": req.approval_id, "status": "executed", "glpi_ticket_id": req.glpi_ticket_id, "glpi_ticket_updated": glpi_updated}
     actions_log.append(entry)
+    audit("action_executed", entry)
     return entry

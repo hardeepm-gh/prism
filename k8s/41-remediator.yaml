@@ -5,6 +5,8 @@ metadata:
   namespace: aiops-m5
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: remediator
@@ -22,6 +24,9 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8090
+        volumeMounts:
+        - name: audit-data
+          mountPath: /data
         securityContext:
           privileged: false
           allowPrivilegeEscalation: false
@@ -29,3 +34,7 @@ spec:
           runAsUser: 1000
           capabilities:
             drop: ["ALL"]
+      volumes:
+      - name: audit-data
+        persistentVolumeClaim:
+          claimName: prism-audit-pvc

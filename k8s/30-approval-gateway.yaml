@@ -5,6 +5,8 @@ metadata:
   namespace: aiops-m5
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: approval-gateway
@@ -32,8 +34,15 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
+        volumeMounts:
+        - name: audit-data
+          mountPath: /data
         securityContext:
           privileged: false
           allowPrivilegeEscalation: false
           capabilities:
             drop: ["ALL"]
+      volumes:
+      - name: audit-data
+        persistentVolumeClaim:
+          claimName: prism-audit-pvc

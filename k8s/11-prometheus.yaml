@@ -5,6 +5,8 @@ metadata:
   namespace: aiops-m5
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: prometheus
@@ -40,4 +42,5 @@ spec:
         configMap:
           name: prometheus-config
       - name: data
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: prism-prometheus-pvc
